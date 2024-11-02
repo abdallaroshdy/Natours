@@ -1,21 +1,22 @@
-const express = require("express");
-const dotEnv = require("dotenv");
 const mongoose = require('mongoose');
 
-const app = express();
+const dotEnv = require('dotenv');
 
 dotEnv.config();
 
-app.use(express.json());
+const app = require('./app');
 
-app.get('/' , (req,res)=>{
-    res.status(200).send("Wellcome on Server Side")
+
+
+// console.log('kWFHuhsdKWMMC');
+
+// const w = 0
+// w = 90
+
+app.listen(process.env.PORT, () => {
+  console.log('server run successfully');
 });
 
-app.listen(process.env.PORT , ()=>{
-    console.log("server run successfully");
-});
-
-mongoose.connect(process.env.DB).then( ()=>{
-    console.log("DataBase Connected successfully");
+mongoose.connect(process.env.DB).then(() => {
+  console.log('DataBase Connected successfully');
 });
