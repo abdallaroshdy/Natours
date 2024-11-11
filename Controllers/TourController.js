@@ -1,25 +1,17 @@
 const Tours = require('../Models/ToursModel')
 const errHandeler = require('../Utilities/ErrorHandeler')
 const responseMSG = require('../Utilities/ResponseMessages')
+const ApiFetures = require('../Utilities/apiFutures')
+
+
 
 const AllTours = async(req,res)=>{
 
     try{
 
-        let query = {...req.query};
-        const executeQueries = ['page' , 'sort' ,'limit','fields'];
-
-        executeQueries.forEach(element => {
-            delete query[element];
-        });
-
-        let strQuery = JSON.stringify( query)
-        .replace(/\b(gt|gte|lt|lte)\b/g , match => `$${match}`);
-
-        query = JSON.parse(strQuery);
-
-
-        const tours= await Tours.find(query);
+        const ApiFeture = new ApiFetures(Tours.find() , req.query).filtering().sorting().selecting().pagination();
+        
+        const tours = await ApiFeture.data;
 
         res.status(200).json({
             status : responseMSG.success ,
@@ -116,10 +108,111 @@ const deleteTour = async(req,res)=>{
 
 }
 
+
+const toursState = async (req,res)=>{
+
+    try{
+
+        const stat = await Tours.aggregate([
+            {
+                $match : {ratingAvrage :{$gte:4.5}}
+            },
+            {
+                $group : {
+                    _id : '$difficulty',
+                    num : {$sum : 1},
+                    MaxRate : {$max : '$ratingAvrage'},
+                    MinRate : {$min : '$ratingAvrage'},
+                    AvgRate : {$avg : '$ratingAvrage'},
+                    Maxprice : {$max : '$price'},
+                    Minprice : {$min : '$price'},
+                    Avgprice : {$avg : '$price'}
+
+                }
+            },
+            {
+                $sort : {num : 1}
+            },
+            // {
+            //     $match : {_id :{$ne:'easy'}}
+            // }
+        ]);
+
+
+        res.status(200).json({
+            status : responseMSG.success,
+            data : stat
+        });
+
+
+    }catch(err){
+        errHandeler(res,err);
+    }
+
+
+}
+
+
+const topBasyMonth = async (req,res)=>{
+
+    try{
+
+        const year = req.params.year;
+
+        const data = await Tours.aggregate([
+            {
+                $unwind: "$startDates"
+            },
+            {
+                $match:{
+                    startDates:{
+                        $gte: new Date(`${year}-01-01`),
+                        $lte: new Date(`${year}-12-31`)
+                    }
+                }
+            },
+            {
+                $group:{
+                    _id:{
+                        $month:"$startDates"
+                    },
+                    num:{$sum:1},
+                    tours:{$push : "$name"}
+                }
+            },
+            {
+                $addFields:{
+                    month : "$_id"
+                }
+            },
+            {
+                $project:{ _id :0 }
+            },
+            {
+                $sort:{num: -1}
+            },
+            // {
+            //     $limit: 1
+            // }
+            
+        ]);
+
+        res.status(200).json({
+            status : responseMSG.success,
+            data : data
+        });
+    }catch(err){
+        errHandeler(res,err);
+    }
+}
+
+
 module.exports = {
     AllTours,
     addTour,
     singleTour,
     updateTour,
-    deleteTour
+    deleteTour,
+    toursState,
+    topBasyMonth
 }

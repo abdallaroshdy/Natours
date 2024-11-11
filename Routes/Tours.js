@@ -18,6 +18,13 @@ const tourController = require('../Controllers/TourController');
 //     next();
 // });
 
+
+Router.route('/tours-stat')
+.get(tourController.toursState)
+
+Router.route('/basy-month/:year')
+.get(tourController.topBasyMonth)
+
 Router.route('/')
 .get(tourController.AllTours)
 .post(tourController.addTour);
